@@ -3,6 +3,7 @@ import { X, Sparkles, AlertCircle } from 'lucide-react'
 import { useTodoStore } from '../store/useTodoStore'
 import { Task } from '../types'
 import toast from 'react-hot-toast'
+import { taskAPI } from '../services/api'
 
 interface QuickAddProps {
   onClose: () => void
@@ -22,12 +23,9 @@ export default function QuickAdd({ onClose }: QuickAddProps) {
 
     try {
       if (useAI) {
-        // Simulate AI parsing (in production, this would call the backend)
-        await new Promise((resolve) => setTimeout(resolve, 800))
-
-        // Simple parsing logic (placeholder for actual AI)
-        const taskData = parseNaturalLanguage(input)
-        addTask(taskData)
+        // Call backend AI parser
+        const parsedData = await taskAPI.parseNaturalLanguage(input)
+        addTask(parsedData)
         toast.success('Task created with AI assistance! 🎉')
       } else {
         // Simple task creation
@@ -43,7 +41,12 @@ export default function QuickAdd({ onClose }: QuickAddProps) {
 
       onClose()
     } catch (error) {
-      toast.error('Failed to create task')
+      console.error('Failed to create task:', error)
+      // Fallback to local parsing if backend fails
+      const taskData = parseNaturalLanguage(input)
+      addTask(taskData)
+      toast.success('Task created (offline mode)')
+      onClose()
     } finally {
       setIsProcessing(false)
     }

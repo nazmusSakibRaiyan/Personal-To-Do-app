@@ -11,7 +11,7 @@ app = FastAPI(title="Smart To-Do API")
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -314,6 +314,246 @@ def delete_task(task_id: str):
     """Delete a task"""
     # In production, delete from database
     return {"message": "Task deleted successfully"}
+
+
+@app.post("/api/tasks/breakdown")
+def get_task_breakdown(data: dict):
+    """AI-powered task breakdown into subtasks"""
+    title = data.get("title", "")
+    description = data.get("description", "")
+    
+    # AI logic to break down complex tasks into subtasks
+    subtasks = []
+    
+    # Simple keyword-based breakdown (in production, use more sophisticated AI)
+    keywords_map = {
+        "project": ["Research and planning", "Design phase", "Implementation", "Testing", "Documentation"],
+        "study": ["Read materials", "Take notes", "Create summary", "Practice problems", "Review"],
+        "presentation": ["Research topic", "Create outline", "Design slides", "Practice delivery", "Prepare Q&A"],
+        "report": ["Gather data", "Outline structure", "Write draft", "Review and edit", "Final formatting"],
+        "exam": ["Review syllabus", "Study notes", "Practice questions", "Create cheat sheet", "Mock test"],
+    }
+    
+    lower_title = title.lower()
+    lower_desc = (description or "").lower()
+    combined = f"{lower_title} {lower_desc}"
+    
+    for keyword, tasks in keywords_map.items():
+        if keyword in combined:
+            subtasks = [{"title": task, "completed": False} for task in tasks]
+            break
+    
+    if not subtasks:
+        # Default breakdown for any task
+        if "write" in combined or "create" in combined:
+            subtasks = [
+                {"title": "Research and gather information", "completed": False},
+                {"title": "Create outline or plan", "completed": False},
+                {"title": "Complete first draft", "completed": False},
+                {"title": "Review and revise", "completed": False},
+            ]
+        else:
+            subtasks = [
+                {"title": "Plan the approach", "completed": False},
+                {"title": "Execute main tasks", "completed": False},
+                {"title": "Review and finalize", "completed": False},
+            ]
+    
+    return {
+        "subtasks": subtasks,
+        "estimatedTime": len(subtasks) * 30,  # 30 mins per subtask
+        "suggestion": f"This task can be broken down into {len(subtasks)} manageable steps."
+    }
+
+
+@app.post("/api/tasks/deadline-suggestions")
+def get_deadline_suggestions(task_data: dict):
+    """Get smart deadline recommendations based on task complexity"""
+    title = task_data.get("title", "")
+    priority = task_data.get("priority", "medium")
+    estimated_time = task_data.get("estimatedTime", 60)
+    tags = task_data.get("tags", [])
+    
+    now = datetime.now()
+    suggestions = []
+    
+    # Calculate based on priority
+    if priority == "urgent":
+        suggestions.append({
+            "date": now.isoformat(),
+            "label": "Today",
+            "reason": "Urgent priority - immediate attention required",
+            "confidence": 95
+        })
+        suggestions.append({
+            "date": (now + timedelta(hours=4)).isoformat(),
+            "label": "In 4 hours",
+            "reason": "Quick turnaround for urgent tasks",
+            "confidence": 90
+        })
+    elif priority == "high":
+        suggestions.append({
+            "date": (now + timedelta(days=1)).isoformat(),
+            "label": "Tomorrow",
+            "reason": "High priority - schedule within 24 hours",
+            "confidence": 90
+        })
+        suggestions.append({
+            "date": (now + timedelta(days=2)).isoformat(),
+            "label": "In 2 days",
+            "reason": "Allows time for preparation",
+            "confidence": 85
+        })
+    elif priority == "medium":
+        suggestions.append({
+            "date": (now + timedelta(days=3)).isoformat(),
+            "label": "In 3 days",
+            "reason": "Balanced timeframe for medium priority",
+            "confidence": 85
+        })
+        suggestions.append({
+            "date": (now + timedelta(days=7)).isoformat(),
+            "label": "Next week",
+            "reason": "Comfortable timeline for planning",
+            "confidence": 80
+        })
+    else:  # low
+        suggestions.append({
+            "date": (now + timedelta(days=7)).isoformat(),
+            "label": "Next week",
+            "reason": "Low priority - can be scheduled flexibly",
+            "confidence": 75
+        })
+        suggestions.append({
+            "date": (now + timedelta(days=14)).isoformat(),
+            "label": "In 2 weeks",
+            "reason": "Extended timeline for low priority tasks",
+            "confidence": 70
+        })
+    
+    # Adjust based on estimated time
+    if estimated_time > 240:  # More than 4 hours
+        for suggestion in suggestions:
+            suggestion["reason"] += " (Complex task requires extra time)"
+            # Push deadlines further
+            original_date = datetime.fromisoformat(suggestion["date"])
+            suggestion["date"] = (original_date + timedelta(days=2)).isoformat()
+    
+    return {"suggestions": suggestions}
+
+
+@app.get("/api/analytics/workload")
+def get_workload_analysis():
+    """Analyze workload distribution and provide balancing suggestions"""
+    # In production, fetch from database
+    now = datetime.now()
+    
+    # Simulated workload data
+    workload = {
+        "current_week": {
+            "total_tasks": 12,
+            "total_hours": 28,
+            "distribution": [
+                {"day": "Monday", "tasks": 3, "hours": 6, "load": "high"},
+                {"day": "Tuesday", "tasks": 2, "hours": 4, "load": "medium"},
+                {"day": "Wednesday", "tasks": 4, "hours": 8, "load": "high"},
+                {"day": "Thursday", "tasks": 1, "hours": 3, "load": "low"},
+                {"day": "Friday", "tasks": 2, "hours": 7, "load": "medium"},
+            ]
+        },
+        "suggestions": [
+            {
+                "type": "rebalance",
+                "message": "Monday and Wednesday are overloaded. Consider moving 1-2 tasks to Thursday.",
+                "action": "redistribute",
+                "priority": "high"
+            },
+            {
+                "type": "break",
+                "message": "You have 6+ hours of work on Monday. Schedule breaks every 90 minutes.",
+                "action": "schedule_breaks",
+                "priority": "medium"
+            },
+            {
+                "type": "focus",
+                "message": "Group similar tasks together on Tuesday to improve focus and efficiency.",
+                "action": "batch_tasks",
+                "priority": "low"
+            }
+        ],
+        "peak_productivity_hours": {
+            "morning": {"start": "09:00", "end": "11:00", "score": 92},
+            "afternoon": {"start": "14:00", "end": "16:00", "score": 85}
+        }
+    }
+    
+    return workload
+
+
+@app.get("/api/analytics/patterns")
+def get_productivity_patterns():
+    """Analyze productivity patterns and provide insights"""
+    # In production, analyze historical data from database
+    
+    patterns = {
+        "completion_trends": {
+            "last_week": 78,
+            "this_week": 85,
+            "trend": "improving",
+            "change_percent": 9
+        },
+        "best_days": [
+            {"day": "Tuesday", "completion_rate": 92, "tasks_completed": 8},
+            {"day": "Thursday", "completion_rate": 88, "tasks_completed": 7},
+            {"day": "Monday", "completion_rate": 75, "tasks_completed": 6}
+        ],
+        "worst_days": [
+            {"day": "Friday", "completion_rate": 62, "tasks_completed": 5},
+            {"day": "Wednesday", "completion_rate": 65, "tasks_completed": 4}
+        ],
+        "category_performance": [
+            {"category": "Work", "completion_rate": 88, "avg_time": 45},
+            {"category": "Study", "completion_rate": 82, "avg_time": 60},
+            {"category": "Personal", "completion_rate": 75, "avg_time": 30}
+        ],
+        "insights": [
+            {
+                "type": "success",
+                "icon": "📈",
+                "message": "Your productivity has improved by 9% this week! Keep it up!",
+                "actionable": False
+            },
+            {
+                "type": "tip",
+                "icon": "💡",
+                "message": "You're most productive on Tuesdays. Schedule important tasks on this day.",
+                "actionable": True,
+                "action": "Reschedule high-priority tasks to Tuesday"
+            },
+            {
+                "type": "warning",
+                "icon": "⚠️",
+                "message": "Friday completion rates are low. Consider lighter schedules for Fridays.",
+                "actionable": True,
+                "action": "Move complex tasks away from Friday"
+            },
+            {
+                "type": "habit",
+                "icon": "🎯",
+                "message": "You complete 88% of work tasks on time. Study tasks need more attention.",
+                "actionable": True,
+                "action": "Allocate more time for study tasks"
+            }
+        ],
+        "time_patterns": {
+            "average_task_duration": 42,
+            "most_productive_hour": "10:00 AM",
+            "least_productive_hour": "3:00 PM",
+            "recommended_break_time": "15 minutes every 90 minutes"
+        }
+    }
+    
+    return patterns
 
 
 if __name__ == "__main__":

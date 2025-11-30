@@ -11,8 +11,10 @@ import {
   Edit,
   Trash2,
   Play,
+  Sparkles,
 } from 'lucide-react'
 import { useState } from 'react'
+import TaskBreakdown from './TaskBreakdown'
 
 interface TaskCardProps {
   task: Task
@@ -21,6 +23,7 @@ interface TaskCardProps {
 export default function TaskCard({ task }: TaskCardProps) {
   const { updateTask, deleteTask, toggleTaskStatus } = useTodoStore()
   const [showMenu, setShowMenu] = useState(false)
+  const [showBreakdown, setShowBreakdown] = useState(false)
 
   const priorityColors = {
     low: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
@@ -103,6 +106,16 @@ export default function TaskCard({ task }: TaskCardProps) {
               </button>
               <button
                 onClick={() => {
+                  setShowBreakdown(true)
+                  setShowMenu(false)
+                }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 text-primary-600 dark:text-primary-400"
+              >
+                <Sparkles size={16} />
+                AI Breakdown
+              </button>
+              <button
+                onClick={() => {
                   deleteTask(task.id)
                   setShowMenu(false)
                 }}
@@ -162,13 +175,23 @@ export default function TaskCard({ task }: TaskCardProps) {
         )}
 
         {/* Subtasks */}
-        {task.subtasks.length > 0 && (
+        {task.subtasks && task.subtasks.length > 0 && (
           <div className="text-sm text-gray-600 dark:text-gray-400">
             {task.subtasks.filter((st) => st.completed).length} / {task.subtasks.length} subtasks
             completed
           </div>
         )}
       </div>
+
+      {/* Task Breakdown Modal */}
+      {showBreakdown && (
+        <TaskBreakdown
+          taskId={task.id}
+          taskTitle={task.title}
+          taskDescription={task.description}
+          onClose={() => setShowBreakdown(false)}
+        />
+      )}
     </div>
   )
 }

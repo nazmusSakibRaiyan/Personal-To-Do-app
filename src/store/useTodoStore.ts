@@ -77,6 +77,8 @@ export const useTodoStore = create<TodoStore>()(
           id: crypto.randomUUID(),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          subtasks: task.subtasks || [],
+          tags: task.tags || [],
         }
         set((state) => ({ tasks: [...state.tasks, newTask] }))
       },

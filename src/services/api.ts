@@ -2,7 +2,7 @@ import axios from 'axios'
 import { Task, TaskStats, AIInsight } from '../types'
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: 'http://localhost:8000/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -24,6 +24,30 @@ export const taskAPI = {
   // Get AI insights
   getInsights: async (): Promise<AIInsight[]> => {
     const response = await api.get('/insights')
+    return response.data
+  },
+
+  // AI task breakdown
+  getTaskBreakdown: async (taskTitle: string, description?: string) => {
+    const response = await api.post('/tasks/breakdown', { title: taskTitle, description })
+    return response.data
+  },
+
+  // Get smart deadline recommendations
+  getDeadlineRecommendations: async (taskData: Partial<Task>) => {
+    const response = await api.post('/tasks/deadline-suggestions', taskData)
+    return response.data
+  },
+
+  // Get workload analysis
+  getWorkloadAnalysis: async () => {
+    const response = await api.get('/analytics/workload')
+    return response.data
+  },
+
+  // Get productivity patterns
+  getProductivityPatterns: async () => {
+    const response = await api.get('/analytics/patterns')
     return response.data
   },
 

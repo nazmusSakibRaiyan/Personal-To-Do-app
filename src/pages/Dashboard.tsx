@@ -5,6 +5,8 @@ import { format, isToday, isTomorrow, isThisWeek } from 'date-fns'
 import TaskCard from '../components/TaskCard'
 import QuickAdd from '../components/QuickAdd'
 import StatsOverview from '../components/StatsOverview'
+import AIInsights from '../components/AIInsights'
+import WorkloadBalance from '../components/WorkloadBalance'
 
 export default function Dashboard() {
   const { tasks, getOverdueTasks } = useTodoStore()
@@ -37,6 +39,12 @@ export default function Dashboard() {
 
       {/* Stats Overview */}
       <StatsOverview />
+
+      {/* AI Insights and Workload Balance */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <AIInsights />
+        <WorkloadBalance />
+      </div>
 
       {/* Quick Actions */}
       <div className="mb-8 flex gap-4">

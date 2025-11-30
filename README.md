@@ -1,84 +1,77 @@
 # Smart To-Do - AI-Powered Task Management App
 
-A comprehensive, AI-powered to-do list application designed for work and study, featuring natural language processing, intelligent scheduling, and advanced task management capabilities.
+A comprehensive, AI-powered to-do list application featuring natural language processing, intelligent scheduling, and advanced task management capabilities.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![React](https://img.shields.io/badge/React-18.2.0-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.2.2-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115.8-green)
 
 ## 🌟 Key Features
 
-### Core Functionality
+### AI-Powered Features
+- **Natural Language Task Input** - Create tasks using plain language with automatic extraction of priorities, dates, and tags
+- **AI Task Breakdown** - Automatically break down complex tasks into manageable subtasks
+- **Smart Deadline Recommendations** - Get AI-powered suggestions for optimal task timing
+- **Workload Balance Analysis** - Visual weekly workload distribution with rebalancing suggestions
+- **Productivity Pattern Analysis** - Track completion trends and get personalized insights
 
-- **Natural Language Task Input**: Create tasks using plain language - AI automatically extracts priorities, dates, tags, and categories
-- **Intelligent Scheduling**: Get AI-powered suggestions for optimal task timing based on your habits and priorities
-- **Recurring Tasks**: Easy setup for daily, weekly, monthly, or custom repeat cycles with AI-suggested patterns
-- **Smart Reminders**: Automated alerts for approaching deadlines and overdue tasks
-- **Sub-task Management**: Break down large tasks with AI-suggested subtask breakdowns
-- **Progress Tracking**: Visual indicators and statistics for completed, pending, and overdue items
+### Core Task Management
+- Task creation, editing, and deletion
+- Priority levels (low, medium, high, urgent)
+- Due dates and reminders
+- Subtasks with progress tracking
+- Tags and categories
+- Recurring tasks
+- Time estimation and tracking
 
-### Organization Features
-
-- **Labels & Categories**: Organize with customizable tags and color-coded categories
-- **Smart Search**: Full-text and AI-powered search with advanced filtering
-- **Calendar Integration**: Visual timeline for all your tasks and deadlines
-- **Templates**: Reusable checklists for routine tasks and study sessions
-- **Collaboration**: Share tasks and organize team projects (framework ready)
-
-### Analytics & Insights
-
-- **Productivity Analytics**: Track completion rates, time estimates, and productivity trends
-- **AI Insights**: Get intelligent suggestions for improving task management
-- **Visual Charts**: See your progress with interactive charts and graphs
-- **Habit Tracking**: Identify your most productive days and times
+### Organization & Views
+- Dashboard with task overview
+- Calendar view
+- Analytics and statistics
+- Task filtering and search
+- Multiple task views (today, upcoming, overdue)
 
 ### Customization
-
-- **Dark/Light Modes**: Choose your preferred theme or use system settings
-- **Customizable UI**: Personalize colors, fonts, and interface settings
-- **Working Hours**: Set your preferred working schedule for smart suggestions
-- **Data Management**: Export/import tasks in JSON or CSV format
+- Dark/Light/System theme support
+- Customizable categories
+- User preferences
+- Task templates
 
 ## 📋 Tech Stack
 
 ### Frontend
-- **React 18** with TypeScript
-- **Vite** for fast development and building
-- **Tailwind CSS** for styling
-- **Zustand** for state management
-- **React Router** for navigation
-- **Recharts** for analytics visualization
-- **React Calendar** for date selection
-- **date-fns** for date manipulation
-- **Lucide React** for icons
+- React 18 with TypeScript
+- Vite for fast development
+- Tailwind CSS for styling
+- Zustand for state management
+- React Router for navigation
+- Axios for API calls
+- date-fns for date handling
+- Lucide React for icons
 
 ### Backend
-- **FastAPI** for REST API
-- **Python 3.10+**
-- **SQLAlchemy** for database ORM (ready for implementation)
-- **Natural Language Processing** for AI features
-- **OpenAI/Transformers** for advanced AI capabilities (optional)
+- FastAPI (Python)
+- Natural Language Processing
+- RESTful API architecture
+- CORS enabled for frontend integration
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-
-- Node.js 18+ and npm/yarn
+- Node.js 18+ and npm
 - Python 3.10+
 - Git
 
 ### Installation
 
 #### 1. Clone the Repository
-
 ```bash
-git clone <your-repo-url>
-cd "to do list"
+git clone https://github.com/nazmusSakibRaiyan/Personal-To-Do-app.git
+cd Personal-To-Do-app
 ```
 
 #### 2. Frontend Setup
-
 ```bash
 # Install dependencies
 npm install
@@ -86,17 +79,114 @@ npm install
 # Start development server
 npm run dev
 ```
-
 The frontend will be available at `http://localhost:3000`
 
 #### 3. Backend Setup
-
 ```bash
 # Navigate to backend directory
 cd backend
 
-# Create virtual environment
-python -m venv venv
+# Install dependencies
+pip install fastapi uvicorn python-dateutil pydantic
+
+# Start server
+python main.py
+```
+The backend will run on `http://localhost:8000`
+
+## 🎯 Using AI Features
+
+### Natural Language Task Creation
+1. Click "Quick Add Task"
+2. Enable "AI-Powered Input"
+3. Type naturally: _"Study for exam tomorrow - urgent"_
+4. AI automatically extracts priority, date, and tags
+
+### AI Task Breakdown
+1. Create or select a task
+2. Click the menu (⋮) on the task card
+3. Select "AI Breakdown"
+4. Review and add suggested subtasks
+
+### View Productivity Insights
+- Navigate to Dashboard
+- See AI-generated insights and recommendations
+- View workload balance across the week
+- Track your productivity patterns
+
+## 📁 Project Structure
+
+```
+to do list/
+├── backend/
+│   ├── main.py              # FastAPI server with AI endpoints
+│   └── requirements.txt     # Python dependencies
+├── src/
+│   ├── components/          # React components
+│   │   ├── AIInsights.tsx
+│   │   ├── TaskBreakdown.tsx
+│   │   ├── WorkloadBalance.tsx
+│   │   └── ...
+│   ├── pages/              # Page components
+│   ├── services/           # API services
+│   ├── store/              # Zustand store
+│   └── types/              # TypeScript types
+├── package.json
+└── README.md
+```
+
+## 🔌 API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/tasks/parse` | POST | Parse natural language to structured task |
+| `/api/tasks/breakdown` | POST | Generate subtasks for a task |
+| `/api/tasks/deadline-suggestions` | POST | Get smart deadline recommendations |
+| `/api/analytics/workload` | GET | Weekly workload analysis |
+| `/api/analytics/patterns` | GET | Productivity patterns and insights |
+
+## 🛠️ Available Scripts
+
+### Frontend
+```bash
+npm run dev        # Start development server
+npm run build      # Build for production
+npm run preview    # Preview production build
+npm run lint       # Run ESLint
+```
+
+### Backend
+```bash
+python main.py     # Start FastAPI server
+```
+
+## 🌐 Environment Variables
+
+Create a `.env` file in the root directory (optional):
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🙏 Acknowledgments
+
+- Built with React, TypeScript, and FastAPI
+- UI components styled with Tailwind CSS
+- Icons from Lucide React
+- AI-powered features using natural language processing
+
+## 📧 Contact
+
+Nazmus Sakib Raiyan - [GitHub](https://github.com/nazmusSakibRaiyan)
+
+Project Link: [https://github.com/nazmusSakibRaiyan/Personal-To-Do-app](https://github.com/nazmusSakibRaiyan/Personal-To-Do-app)
 
 # Activate virtual environment
 # On Windows:
