@@ -87,10 +87,14 @@ htmlcov/
 *.swo
 *~
 
-# Documentation (keeping only README)
-AI_FEATURES_IMPLEMENTATION.md
-IMPLEMENTATION_SUMMARY.md
-QUICK_START.md
+# Documentation (keeping only README.md and writeup.md)
+*.md
+!README.md
+writeup.md
 
-# Package lock files (optional - comment out if you want to keep them)
-# package-lock.json
+# Text files (keeping only requirements.txt)
+*.txt
+!requirements.txt
+
+Package-lock.json
+package-lock.json

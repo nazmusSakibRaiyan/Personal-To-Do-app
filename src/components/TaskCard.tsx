@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import TaskBreakdown from './TaskBreakdown'
+import TaskEditModal from './TaskEditModal'
 
 interface TaskCardProps {
   task: Task
@@ -24,6 +25,7 @@ export default function TaskCard({ task }: TaskCardProps) {
   const { updateTask, deleteTask, toggleTaskStatus } = useTodoStore()
   const [showMenu, setShowMenu] = useState(false)
   const [showBreakdown, setShowBreakdown] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   const priorityColors = {
     low: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
@@ -96,8 +98,8 @@ export default function TaskCard({ task }: TaskCardProps) {
             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
               <button
                 onClick={() => {
+                  setShowEditModal(true)
                   setShowMenu(false)
-                  // Open edit modal
                 }}
                 className="flex items-center gap-2 w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg"
               >
@@ -190,6 +192,14 @@ export default function TaskCard({ task }: TaskCardProps) {
           taskTitle={task.title}
           taskDescription={task.description}
           onClose={() => setShowBreakdown(false)}
+        />
+      )}
+
+      {/* Task Edit Modal */}
+      {showEditModal && (
+        <TaskEditModal
+          task={task}
+          onClose={() => setShowEditModal(false)}
         />
       )}
     </div>

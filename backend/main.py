@@ -1,10 +1,16 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 from datetime import datetime, timedelta
 import re
 from dateutil import parser
+from dotenv import load_dotenv
+import os
+from email_service import EmailConfig, initialize_email_service, get_email_service
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI(title="Smart To-Do API")
 
@@ -554,6 +560,389 @@ def get_productivity_patterns():
     }
     
     return patterns
+
+
+# Calendar and Export Endpoints
+@app.post("/api/calendar/export")
+def export_calendar(format: str = "ical"):
+    """Export tasks as iCalendar format"""
+    from icalendar import Calendar, Event
+    from datetime import datetime as dt
+    
+    # Create calendar
+    cal = Calendar()
+    cal.add('prodid', '-//Smart To-Do App//EN')
+    cal.add('version', '2.0')
+    cal.add('calscale', 'GREGORIAN')
+    cal.add('x-wr-calname', 'Tasks')
+    cal.add('x-wr-caldesc', 'Tasks exported from Smart To-Do App')
+    cal.add('x-wr-timezone', 'UTC')
+    
+    # In production, fetch tasks from database
+    sample_tasks = [
+        {
+            "title": "Complete project proposal",
+            "description": "Finish the Q1 project proposal",
+            "dueDate": (dt.now() + timedelta(days=3)).isoformat(),
+            "priority": "high",
+            "status": "pending"
+        },
+        {
+            "title": "Study for exam",
+            "description": "Prepare for mathematics exam",
+            "dueDate": (dt.now() + timedelta(days=7)).isoformat(),
+            "priority": "urgent",
+            "status": "pending"
+        }
+    ]
+    
+    for task in sample_tasks:
+        if task["dueDate"]:
+            event = Event()
+            event.add('summary', task["title"])
+            event.add('description', task.get("description", ""))
+            event.add('dtstart', dt.fromisoformat(task["dueDate"]))
+            event.add('dtend', dt.fromisoformat(task["dueDate"]) + timedelta(hours=1))
+            event.add('priority', {'urgent': 1, 'high': 3, 'medium': 5, 'low': 9}.get(task.get("priority", "medium"), 5))
+            event.add('categories', [task.get("priority", "medium")])
+            
+            cal.add_component(event)
+    
+    return cal.to_ical().decode('utf-8')
+
+
+@app.get("/api/calendar/month")
+def get_month_view(year: int, month: int):
+    """Get tasks for a specific month"""
+    from calendar import monthcalendar
+    from datetime import datetime as dt
+    
+    # In production, fetch from database
+    month_cal = monthcalendar(year, month)
+    
+    return {
+        "year": year,
+        "month": month,
+        "weeks": month_cal,
+        "tasks_by_day": {}  # Would be populated from database
+    }
+
+
+@app.get("/api/calendar/week")
+def get_week_view(start_date: str):
+    """Get tasks for a specific week"""
+    from datetime import datetime as dt
+    
+    start = dt.fromisoformat(start_date)
+    week_days = []
+    
+    for i in range(7):
+        day = start + timedelta(days=i)
+        week_days.append({
+            "date": day.isoformat(),
+            "day": day.strftime("%A"),
+            "tasks": []  # Would be populated from database
+        })
+    
+    return {
+        "week_start": start.isoformat(),
+        "days": week_days
+    }
+
+
+@app.post("/api/calendar/time-blocks")
+def create_time_blocks(data: dict):
+    """Create time blocks for task scheduling"""
+    blocks = data.get("blocks", [])
+    
+    return {
+        "blocks": blocks,
+        "suggestions": [
+            {
+                "start": "09:00",
+                "duration": 2,
+                "task": "Deep work session",
+                "priority": "high"
+            },
+            {
+                "start": "11:30",
+                "duration": 0.5,
+                "task": "Break",
+                "priority": "low"
+            },
+            {
+                "start": "12:00",
+                "duration": 1,
+                "task": "Lunch",
+                "priority": "low"
+            },
+            {
+                "start": "13:00",
+                "duration": 2.5,
+                "task": "Focused work",
+                "priority": "high"
+            }
+        ]
+    }
+
+
+@app.get("/api/calendar/time-blocks/{date}")
+def get_time_blocks(date: str):
+    """Get time blocks for a specific date"""
+    return {
+        "date": date,
+        "blocks": [
+            {
+                "start": "09:00",
+                "duration": 2,
+                "title": "Team Meeting",
+                "type": "work",
+                "priority": "high"
+            },
+            {
+                "start": "11:00",
+                "duration": 1,
+                "title": "Break",
+                "type": "break",
+                "priority": "low"
+            }
+        ]
+    }
+
+
+@app.post("/api/google-calendar/auth")
+def authenticate_google_calendar(data: dict):
+    """Handle Google Calendar OAuth authentication"""
+    token = data.get("token")
+    
+    # In production, validate token with Google API
+    return {
+        "success": True,
+        "message": "Successfully authenticated with Google Calendar",
+        "email": "user@example.com",
+        "auth_token": token
+    }
+
+
+@app.post("/api/google-calendar/sync")
+def sync_google_calendar(data: dict = {}):
+    """Sync tasks with Google Calendar"""
+    # In production, use Google Calendar API to:
+    # 1. Fetch events from Google Calendar
+    # 2. Create calendar events for new tasks
+    # 3. Update events for modified tasks
+    # 4. Delete events for removed tasks
+    
+    return {
+        "success": True,
+        "synced_count": 12,
+        "created_count": 3,
+        "updated_count": 5,
+        "deleted_count": 1,
+        "last_sync": datetime.now().isoformat()
+    }
+
+
+@app.get("/api/google-calendar/events")
+def get_google_calendar_events(start_date: str, end_date: str):
+    """Get events from Google Calendar"""
+    return {
+        "events": [
+            {
+                "id": "event_1",
+                "title": "Team Standup",
+                "start": start_date,
+                "duration": 30,
+                "type": "meeting"
+            },
+            {
+                "id": "event_2",
+                "title": "Lunch Break",
+                "start": start_date,
+                "duration": 60,
+                "type": "break"
+            }
+        ]
+    }
+
+
+@app.post("/api/tasks/reschedule")
+def reschedule_task(task_id: str, new_date: str):
+    """Reschedule a task to a new date (used for drag-drop)"""
+    # In production, update database
+    return {
+        "success": True,
+        "task_id": task_id,
+        "new_date": new_date,
+        "message": f"Task rescheduled to {new_date}"
+    }
+
+
+# Email Configuration Models
+class EmailConfigRequest(BaseModel):
+    email: EmailStr
+    password: str
+    smtp_server: str = "smtp.gmail.com"
+    smtp_port: int = 587
+
+class EmailRequest(BaseModel):
+    to_email: EmailStr
+    subject: str
+    body: str
+
+class TaskReminderRequest(BaseModel):
+    to_email: EmailStr
+    task_title: str
+    due_date: str
+    priority: str
+
+class DailySummaryRequest(BaseModel):
+    to_email: EmailStr
+    tasks_count: int
+    completed_count: int
+
+
+# Email Endpoints
+@app.post("/api/email/configure")
+def configure_email(config: EmailConfigRequest):
+    """Configure email service with SMTP credentials"""
+    try:
+        email_config = EmailConfig(
+            email=config.email,
+            password=config.password,
+            smtp_server=config.smtp_server,
+            smtp_port=config.smtp_port
+        )
+        
+        success = initialize_email_service(email_config)
+        
+        if success:
+            return {
+                "success": True,
+                "message": "Email service configured successfully",
+                "email": config.email
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Failed to configure email service")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/email/send")
+def send_custom_email(request: EmailRequest):
+    """Send a custom email"""
+    email_svc = get_email_service()
+    
+    if not email_svc:
+        raise HTTPException(status_code=400, detail="Email service not configured. Please configure email first.")
+    
+    success = email_svc.send_email(
+        to_email=request.to_email,
+        subject=request.subject,
+        body=request.body,
+        is_html=True
+    )
+    
+    if success:
+        return {
+            "success": True,
+            "message": "Email sent successfully",
+            "recipient": request.to_email
+        }
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send email")
+
+
+@app.post("/api/email/task-reminder")
+def send_task_reminder(request: TaskReminderRequest):
+    """Send task reminder email"""
+    email_svc = get_email_service()
+    
+    if not email_svc:
+        raise HTTPException(status_code=400, detail="Email service not configured. Please configure email first.")
+    
+    success = email_svc.send_task_reminder(
+        to_email=request.to_email,
+        task_title=request.task_title,
+        due_date=request.due_date,
+        priority=request.priority
+    )
+    
+    if success:
+        return {
+            "success": True,
+            "message": f"Task reminder sent to {request.to_email}",
+            "task": request.task_title
+        }
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send task reminder")
+
+
+@app.post("/api/email/task-completed")
+def send_task_completed(to_email: EmailStr, task_title: str):
+    """Send task completion notification"""
+    email_svc = get_email_service()
+    
+    if not email_svc:
+        raise HTTPException(status_code=400, detail="Email service not configured. Please configure email first.")
+    
+    success = email_svc.send_task_completed(
+        to_email=to_email,
+        task_title=task_title
+    )
+    
+    if success:
+        return {
+            "success": True,
+            "message": f"Task completion notification sent to {to_email}",
+            "task": task_title
+        }
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send completion notification")
+
+
+@app.post("/api/email/daily-summary")
+def send_daily_summary(request: DailySummaryRequest):
+    """Send daily summary email"""
+    email_svc = get_email_service()
+    
+    if not email_svc:
+        raise HTTPException(status_code=400, detail="Email service not configured. Please configure email first.")
+    
+    success = email_svc.send_daily_summary(
+        to_email=request.to_email,
+        tasks_count=request.tasks_count,
+        completed_count=request.completed_count
+    )
+    
+    if success:
+        return {
+            "success": True,
+            "message": f"Daily summary sent to {request.to_email}",
+            "tasks_count": request.tasks_count,
+            "completed_count": request.completed_count
+        }
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send daily summary")
+
+
+@app.get("/api/email/status")
+def get_email_status():
+    """Check if email service is configured"""
+    email_svc = get_email_service()
+    
+    if email_svc:
+        return {
+            "configured": True,
+            "email": email_svc.email,
+            "smtp_server": email_svc.smtp_server,
+            "smtp_port": email_svc.smtp_port
+        }
+    else:
+        return {
+            "configured": False,
+            "message": "Email service not configured. Use /api/email/configure to set it up."
+        }
 
 
 if __name__ == "__main__":

@@ -6,12 +6,14 @@ import Tasks from './pages/Tasks'
 import Calendar from './pages/Calendar'
 import Analytics from './pages/Analytics'
 import Settings from './pages/Settings'
+import { useTaskReminders } from './hooks/useTaskReminders'
 
-function App() {
+function AppContent() {
+  // Initialize task reminder system
+  useTaskReminders()
+
   return (
-    <BrowserRouter>
-      <Toaster position="top-right" />
-      <Routes>
+    <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="tasks" element={<Tasks />} />
@@ -20,6 +22,14 @@ function App() {
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
+    )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Toaster position="top-right" />
+      <AppContent />
     </BrowserRouter>
   )
 }

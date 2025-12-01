@@ -97,6 +97,121 @@ export const taskAPI = {
     })
     return response.data
   },
+
+  // Calendar features
+  exportCalendar: async (format: 'ical' | 'json' = 'ical'): Promise<string> => {
+    const response = await api.get('/calendar/export', {
+      params: { format },
+    })
+    return response.data
+  },
+
+  getMonthView: async (year: number, month: number) => {
+    const response = await api.get('/calendar/month', {
+      params: { year, month },
+    })
+    return response.data
+  },
+
+  getWeekView: async (startDate: string) => {
+    const response = await api.get('/calendar/week', {
+      params: { start_date: startDate },
+    })
+    return response.data
+  },
+
+  getTimeBlocks: async (date: string) => {
+    const response = await api.get(`/calendar/time-blocks/${date}`)
+    return response.data
+  },
+
+  createTimeBlocks: async (blocks: any[]) => {
+    const response = await api.post('/calendar/time-blocks', { blocks })
+    return response.data
+  },
+
+  rescheduleTask: async (taskId: string, newDate: string) => {
+    const response = await api.post('/tasks/reschedule', { task_id: taskId, new_date: newDate })
+    return response.data
+  },
+
+  // Google Calendar integration
+  authenticateGoogle: async (token: string) => {
+    const response = await api.post('/google-calendar/auth', { token })
+    return response.data
+  },
+
+  syncGoogleCalendar: async () => {
+    const response = await api.post('/google-calendar/sync')
+    return response.data
+  },
+
+  getGoogleCalendarEvents: async (startDate: string, endDate: string) => {
+    const response = await api.get('/google-calendar/events', {
+      params: { start_date: startDate, end_date: endDate },
+    })
+    return response.data
+  },
+}
+
+// Email API
+export const emailAPI = {
+  // Configure email service
+  configureEmail: async (email: string, password: string, smtpServer?: string, smtpPort?: number) => {
+    const response = await api.post('/email/configure', {
+      email,
+      password,
+      smtp_server: smtpServer || 'smtp.gmail.com',
+      smtp_port: smtpPort || 587,
+    })
+    return response.data
+  },
+
+  // Send custom email
+  sendEmail: async (toEmail: string, subject: string, body: string) => {
+    const response = await api.post('/email/send', {
+      to_email: toEmail,
+      subject,
+      body,
+    })
+    return response.data
+  },
+
+  // Send task reminder
+  sendTaskReminder: async (toEmail: string, taskTitle: string, dueDate: string, priority: string) => {
+    const response = await api.post('/email/task-reminder', {
+      to_email: toEmail,
+      task_title: taskTitle,
+      due_date: dueDate,
+      priority,
+    })
+    return response.data
+  },
+
+  // Send task completion notification
+  sendTaskCompleted: async (toEmail: string, taskTitle: string) => {
+    const response = await api.post('/email/task-completed', {
+      to_email: toEmail,
+      task_title: taskTitle,
+    })
+    return response.data
+  },
+
+  // Send daily summary
+  sendDailySummary: async (toEmail: string, tasksCount: number, completedCount: number) => {
+    const response = await api.post('/email/daily-summary', {
+      to_email: toEmail,
+      tasks_count: tasksCount,
+      completed_count: completedCount,
+    })
+    return response.data
+  },
+
+  // Check email configuration status
+  getEmailStatus: async () => {
+    const response = await api.get('/email/status')
+    return response.data
+  },
 }
 
 export default api

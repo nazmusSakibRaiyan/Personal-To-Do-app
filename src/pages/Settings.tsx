@@ -1,6 +1,7 @@
 import { useTodoStore } from '../store/useTodoStore'
 import { Download, Upload, Trash2, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
+import EmailConfiguration from '../components/EmailConfiguration'
 
 export default function Settings() {
   const { preferences, updatePreferences, categories, addCategory, deleteCategory } = useTodoStore()
@@ -231,6 +232,12 @@ export default function Settings() {
             </label>
           </div>
         </div>
+      </div>
+
+      {/* Email Configuration Section */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4">Email & Notifications</h2>
+        <EmailConfiguration />
       </div>
     </div>
   )
