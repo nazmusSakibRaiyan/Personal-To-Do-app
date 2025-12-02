@@ -8,7 +8,8 @@ import {
   Moon, 
   Sun,
   Menu,
-  X
+  X,
+  Database
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useTodoStore } from '../store/useTodoStore'
@@ -39,6 +40,7 @@ export default function Layout() {
     { path: '/tasks', icon: CheckSquare, label: 'Tasks' },
     { path: '/calendar', icon: Calendar, label: 'Calendar' },
     { path: '/analytics', icon: BarChart3, label: 'Analytics' },
+    { path: '/data-management', icon: Database, label: 'Data Management' },
     { path: '/settings', icon: Settings, label: 'Settings' },
   ]
 

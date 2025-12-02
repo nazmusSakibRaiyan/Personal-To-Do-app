@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Task, Category, UserPreferences, TaskTemplate } from '../types'
 import { addDays, parseISO } from 'date-fns'
+import { undoRedoManager } from '../services/undoRedo'
+import { addToHistory } from '../services/dataManagement'
 
 interface TodoStore {
   tasks: Task[]
@@ -28,6 +30,16 @@ interface TodoStore {
   
   // Preferences
   updatePreferences: (updates: Partial<UserPreferences>) => void
+  
+  // Undo/Redo operations
+  undo: () => void
+  redo: () => void
+  canUndo: () => boolean
+  canRedo: () => boolean
+  
+  // Bulk restore operations
+  setTasks: (tasks: Task[]) => void
+  setCategories: (categories: Category[]) => void
   
   // Utility
   getTaskById: (id: string) => Task | undefined
@@ -80,31 +92,53 @@ export const useTodoStore = create<TodoStore>()(
           subtasks: task.subtasks || [],
           tags: task.tags || [],
         }
-        set((state) => ({ tasks: [...state.tasks, newTask] }))
+        set((state) => {
+          const newTasks = [...state.tasks, newTask]
+          undoRedoManager.push(newTasks)
+          // Track history
+          addToHistory(newTask.id, newTask.title, 'create', { title: newTask.title, description: newTask.description })
+          return { tasks: newTasks } as Partial<TodoStore>
+        })
       },
 
       updateTask: (id, updates) => {
-        set((state) => ({
-          tasks: state.tasks.map((task) =>
+        set((state) => {
+          const oldTask = state.tasks.find(t => t.id === id)
+          const newTasks = state.tasks.map((task) =>
             task.id === id
               ? { ...task, ...updates, updatedAt: new Date().toISOString() }
               : task
-          ),
-        }))
+          )
+          undoRedoManager.push(newTasks)
+          // Track history
+          if (oldTask) {
+            addToHistory(id, oldTask.title, 'update', updates, oldTask)
+          }
+          return { tasks: newTasks } as Partial<TodoStore>
+        })
       },
 
       deleteTask: (id) => {
-        set((state) => ({
-          tasks: state.tasks.filter((task) => task.id !== id),
-        }))
+        set((state) => {
+          const taskToDelete = state.tasks.find(t => t.id === id)
+          const newTasks = state.tasks.filter((task) => task.id !== id)
+          undoRedoManager.push(newTasks)
+          // Track history
+          if (taskToDelete) {
+            addToHistory(id, taskToDelete.title, 'delete', undefined, taskToDelete)
+          }
+          return { tasks: newTasks } as Partial<TodoStore>
+        })
       },
 
       toggleTaskStatus: (id) => {
-        set((state) => ({
-          tasks: state.tasks.map((task) => {
+        set((state) => {
+          const newTasks: Task[] = state.tasks.map((task): Task => {
             if (task.id === id) {
-              const newStatus =
+              const newStatus: 'pending' | 'completed' | 'in-progress' =
                 task.status === 'completed' ? 'pending' : 'completed'
+              // Track history
+              addToHistory(id, task.title, 'complete', { status: newStatus }, { status: task.status })
               return {
                 ...task,
                 status: newStatus,
@@ -114,27 +148,32 @@ export const useTodoStore = create<TodoStore>()(
               }
             }
             return task
-          }),
-        }))
+          })
+          undoRedoManager.push(newTasks)
+          return { tasks: newTasks } as Partial<TodoStore>
+        })
       },
 
       toggleSubtask: (taskId, subtaskId) => {
-        set((state) => ({
-          tasks: state.tasks.map((task) => {
+        set((state) => {
+          const newTasks: Task[] = state.tasks.map((task): Task => {
             if (task.id === taskId) {
+              const updatedSubtasks = task.subtasks.map((subtask) =>
+                subtask.id === subtaskId
+                  ? { ...subtask, completed: !subtask.completed }
+                  : subtask
+              )
               return {
                 ...task,
-                subtasks: task.subtasks.map((subtask) =>
-                  subtask.id === subtaskId
-                    ? { ...subtask, completed: !subtask.completed }
-                    : subtask
-                ),
+                subtasks: updatedSubtasks,
                 updatedAt: new Date().toISOString(),
               }
             }
             return task
-          }),
-        }))
+          })
+          undoRedoManager.push(newTasks)
+          return { tasks: newTasks } as Partial<TodoStore>
+        })
       },
 
       addCategory: (category) => {
@@ -182,11 +221,30 @@ export const useTodoStore = create<TodoStore>()(
         }
       },
 
-      updatePreferences: (updates) => {
-        set((state) => ({
-          preferences: { ...state.preferences, ...updates },
-        }))
+    updatePreferences: (updates) => {
+      set((state) => ({
+        preferences: { ...state.preferences, ...updates },
+      }))
+    },
+    
+    // Bulk restore
+    setTasks: (tasks) => set({ tasks }),
+    setCategories: (categories) => set({ categories }),      undo: () => {
+        const previousTasks = undoRedoManager.undo()
+        if (previousTasks) {
+          set({ tasks: previousTasks })
+        }
       },
+
+      redo: () => {
+        const nextTasks = undoRedoManager.redo()
+        if (nextTasks) {
+          set({ tasks: nextTasks })
+        }
+      },
+
+      canUndo: () => undoRedoManager.canUndo(),
+      canRedo: () => undoRedoManager.canRedo(),
 
       getTaskById: (id) => {
         return get().tasks.find((task) => task.id === id)
@@ -223,3 +281,7 @@ export const useTodoStore = create<TodoStore>()(
     }
   )
 )
+
+// Initialize undo/redo manager when store is created
+const currentTasks = useTodoStore.getState().tasks
+undoRedoManager.initialize(currentTasks)

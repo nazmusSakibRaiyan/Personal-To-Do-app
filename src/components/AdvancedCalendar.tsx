@@ -103,12 +103,16 @@ export default function AdvancedCalendar() {
   // Get calendar days based on view type
   const getCalendarDays = () => {
     if (viewType === 'month') {
-      const start = startOfMonth(currentDate)
-      const end = endOfMonth(currentDate)
+      // Start from Sunday of the week containing the first day of the month
+      const monthStart = startOfMonth(currentDate)
+      const start = startOfWeek(monthStart, { weekStartsOn: 0 })
+      // End on Saturday of the week containing the last day of the month
+      const monthEnd = endOfMonth(currentDate)
+      const end = endOfWeek(monthEnd, { weekStartsOn: 0 })
       return eachDayOfInterval({ start, end })
     } else {
-      const start = startOfWeek(currentDate)
-      const end = endOfWeek(currentDate)
+      const start = startOfWeek(currentDate, { weekStartsOn: 0 })
+      const end = endOfWeek(currentDate, { weekStartsOn: 0 })
       return eachDayOfInterval({ start, end })
     }
   }

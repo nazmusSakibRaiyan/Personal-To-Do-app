@@ -79,6 +79,13 @@ coverage/
 *.cover
 .pytest_cache/
 htmlcov/
+test-*.js
+test-*.sh
+test-*.py
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
 
 # Temporary files
 *.tmp
@@ -96,5 +103,5 @@ writeup.md
 *.txt
 !requirements.txt
 
-Package-lock.json
+Package.json
 package-lock.json
