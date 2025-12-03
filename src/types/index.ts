@@ -64,6 +64,7 @@ export interface UserPreferences {
   weekStartsOn: number
   dateFormat: string
   timeFormat: '12h' | '24h'
+  notificationSettings?: NotificationSettings
 }
 
 export interface AIInsight {
@@ -107,4 +108,44 @@ export interface FilterOptions {
     end: string
   }
   searchQuery?: string
+}
+
+export interface Reminder {
+  id: string
+  taskId: string
+  reminderTime: string // ISO datetime
+  notificationType: 'browser' | 'email' | 'sound' | 'all'
+  sent: boolean
+  sentAt?: string
+  createdAt: string
+}
+
+export interface Notification {
+  id: string
+  taskId: string
+  title: string
+  message: string
+  type: 'reminder' | 'overdue' | 'upcoming' | 'completion' | 'custom'
+  read: boolean
+  priority: Task['priority']
+  createdAt: string
+  actionUrl?: string
+}
+
+export interface NotificationSettings {
+  enabled: boolean
+  soundEnabled: boolean
+  browserNotificationsEnabled: boolean
+  emailRemindersEnabled: boolean
+  emailAddress?: string
+  defaultReminderMinutes: number[] // e.g., [15, 60, 1440]
+  smartRemindersEnabled: boolean
+  smartReminderRules: {
+    urgent: number[] // reminder times in minutes before deadline
+    high: number[]
+    medium: number[]
+    low: number[]
+  }
+  notificationFrequency: 'immediate' | 'batch' // immediate per task or batched
+  batchTime?: string // HH:mm format if batch mode
 }

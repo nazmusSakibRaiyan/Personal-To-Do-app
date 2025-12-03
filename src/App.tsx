@@ -7,14 +7,10 @@ import Calendar from './pages/Calendar'
 import Analytics from './pages/Analytics'
 import Settings from './pages/Settings'
 import DataManagementPage from './pages/DataManagement'
-import { useTaskReminders } from './hooks/useTaskReminders'
 import { useTodoStore } from './store/useTodoStore'
 import { useEffect } from 'react'
 
 function AppContent() {
-  // Initialize task reminder system
-  useTaskReminders()
-  
   // Initialize keyboard shortcuts for undo/redo
   const { undo, redo } = useTodoStore()
   

@@ -2,6 +2,8 @@ import { useTodoStore } from '../store/useTodoStore'
 import { Download, Upload, Trash2, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import EmailConfiguration from '../components/EmailConfiguration'
+import { NotificationSettingsComponent } from '../components/NotificationSettings'
+import { NotificationSettings } from '../types'
 
 export default function Settings() {
   const { preferences, updatePreferences, categories, addCategory, deleteCategory } = useTodoStore()
@@ -55,6 +57,39 @@ export default function Settings() {
       <h1 className="text-3xl font-bold mb-8">Settings</h1>
 
       <div className="space-y-6">
+        {/* Notifications & Reminders */}
+        <div className="card">
+          <NotificationSettingsComponent
+            initialSettings={preferences.notificationSettings || {
+              enabled: true,
+              soundEnabled: preferences.notifications.soundEnabled,
+              browserNotificationsEnabled: false,
+              emailRemindersEnabled: false,
+              defaultReminderMinutes: preferences.notifications.reminderMinutes || [15, 60, 1440],
+              smartRemindersEnabled: true,
+              smartReminderRules: {
+                urgent: [5, 15, 60],
+                high: [15, 60, 240],
+                medium: [30, 120, 1440],
+                low: [60, 1440],
+              },
+              notificationFrequency: 'immediate',
+            }}
+            onSave={(settings: NotificationSettings) => {
+              updatePreferences({
+                notificationSettings: settings,
+                notifications: {
+                  ...preferences.notifications,
+                  soundEnabled: settings.soundEnabled,
+                  enabled: settings.enabled,
+                  reminderMinutes: settings.defaultReminderMinutes,
+                },
+              })
+              toast.success('Notification settings saved!')
+            }}
+          />
+        </div>
+
         {/* Appearance */}
         <div className="card">
           <h2 className="text-xl font-semibold mb-4">Appearance</h2>
@@ -99,40 +134,6 @@ export default function Settings() {
                 <option value="24h">24 Hour</option>
               </select>
             </div>
-          </div>
-        </div>
-
-        {/* Notifications */}
-        <div className="card">
-          <h2 className="text-xl font-semibold mb-4">Notifications</h2>
-          <div className="space-y-4">
-            <label className="flex items-center justify-between">
-              <span>Enable Notifications</span>
-              <input
-                type="checkbox"
-                checked={preferences.notifications.enabled}
-                onChange={(e) =>
-                  updatePreferences({
-                    notifications: { ...preferences.notifications, enabled: e.target.checked },
-                  })
-                }
-                className="w-5 h-5"
-              />
-            </label>
-
-            <label className="flex items-center justify-between">
-              <span>Sound Notifications</span>
-              <input
-                type="checkbox"
-                checked={preferences.notifications.soundEnabled}
-                onChange={(e) =>
-                  updatePreferences({
-                    notifications: { ...preferences.notifications, soundEnabled: e.target.checked },
-                  })
-                }
-                className="w-5 h-5"
-              />
-            </label>
           </div>
         </div>
 

@@ -98,6 +98,8 @@ test-*.py
 *.md
 !README.md
 writeup.md
+TEST_EXECUTION_REPORT.md
+PROJECT_PROGRESS.md
 
 # Text files (keeping only requirements.txt)
 *.txt

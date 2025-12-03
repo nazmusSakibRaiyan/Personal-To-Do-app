@@ -214,4 +214,84 @@ export const emailAPI = {
   },
 }
 
+// Reminders API
+export const remindersAPI = {
+  // Schedule a single reminder
+  scheduleReminder: async (
+    taskId: string,
+    taskTitle: string,
+    dueDate: string,
+    notificationType: 'browser' | 'email' | 'sound' | 'all' = 'browser',
+    minutesBefore: number = 15,
+  ) => {
+    const response = await api.post('/reminders/schedule', {
+      taskId,
+      taskTitle,
+      dueDate,
+      notificationType,
+      minutesBefore,
+    })
+    return response.data
+  },
+
+  // Schedule smart reminders based on priority
+  scheduleSmartReminders: async (
+    taskId: string,
+    taskTitle: string,
+    dueDate: string,
+    priority: 'urgent' | 'high' | 'medium' | 'low' = 'medium',
+    notificationType: 'browser' | 'email' | 'sound' | 'all' = 'browser',
+  ) => {
+    const response = await api.post('/reminders/schedule-smart', {
+      taskId,
+      taskTitle,
+      dueDate,
+      priority,
+      notificationType,
+    })
+    return response.data
+  },
+
+  // Get reminders for a specific task
+  getTaskReminders: async (taskId: string) => {
+    const response = await api.get(`/reminders/task/${taskId}`)
+    return response.data
+  },
+
+  // Get all reminders
+  getAllReminders: async (status?: 'pending' | 'sent') => {
+    const response = await api.get('/reminders', { params: { status } })
+    return response.data
+  },
+
+  // Delete a specific reminder
+  deleteReminder: async (reminderId: string) => {
+    const response = await api.delete(`/reminders/${reminderId}`)
+    return response.data
+  },
+
+  // Delete all reminders for a task
+  deleteTaskReminders: async (taskId: string) => {
+    const response = await api.delete(`/reminders/task/${taskId}`)
+    return response.data
+  },
+
+  // Mark reminder as sent
+  markReminderSent: async (reminderId: string) => {
+    const response = await api.post(`/reminders/${reminderId}/mark-sent`)
+    return response.data
+  },
+
+  // Send email reminder
+  sendReminderEmail: async (taskId: string, taskTitle: string, dueDate: string, email: string) => {
+    const response = await api.post('/reminders/send-email', {
+      task_id: taskId,
+      task_title: taskTitle,
+      due_date: dueDate,
+      email,
+    })
+    return response.data
+  },
+}
+
 export default api

@@ -945,6 +945,225 @@ def get_email_status():
         }
 
 
-if __name__ == "__main__":
+# ==================== REMINDER ENDPOINTS ====================
+
+# In-memory storage for reminders (in production, use database)
+scheduled_reminders = {}
+
+class ReminderRequest(BaseModel):
+    taskId: str
+    taskTitle: str
+    dueDate: str
+    priority: str = "medium"
+    notificationType: str = "browser"  # browser, email, sound, all
+    minutesBefore: int = 15  # remind X minutes before
+
+class ReminderModel(BaseModel):
+    id: str
+    taskId: str
+    taskTitle: str
+    reminderTime: str
+    notificationType: str
+    sent: bool = False
+    sentAt: Optional[str] = None
+    createdAt: str
+
+def calculate_smart_reminder_minutes(priority: str) -> List[int]:
+    """Calculate reminder times based on task priority"""
+    reminder_rules = {
+        "urgent": [5, 15, 60],  # 5 min, 15 min, 1 hour before
+        "high": [15, 60, 240],  # 15 min, 1 hour, 4 hours before
+        "medium": [30, 120, 1440],  # 30 min, 2 hours, 1 day before
+        "low": [60, 1440],  # 1 hour, 1 day before
+    }
+    return reminder_rules.get(priority, reminder_rules["medium"])
+
+@app.post("/api/reminders/schedule")
+def schedule_reminder(request: ReminderRequest):
+    """Schedule a reminder for a task"""
+    try:
+        due_date = datetime.fromisoformat(request.dueDate)
+        reminder_time = due_date - timedelta(minutes=request.minutesBefore)
+        
+        reminder_id = f"{request.taskId}-{request.minutesBefore}"
+        
+        reminder = ReminderModel(
+            id=reminder_id,
+            taskId=request.taskId,
+            taskTitle=request.taskTitle,
+            reminderTime=reminder_time.isoformat(),
+            notificationType=request.notificationType,
+            createdAt=datetime.now().isoformat()
+        )
+        
+        # Store reminder
+        scheduled_reminders[reminder_id] = reminder.dict()
+        
+        return {
+            "success": True,
+            "message": f"Reminder scheduled for {request.taskTitle}",
+            "reminder": reminder.dict(),
+            "reminderTime": reminder_time.isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to schedule reminder: {str(e)}")
+
+
+@app.post("/api/reminders/schedule-smart")
+def schedule_smart_reminders(request: ReminderRequest):
+    """Schedule multiple smart reminders based on task priority"""
+    try:
+        reminder_minutes = calculate_smart_reminder_minutes(request.priority)
+        scheduled = []
+        
+        for minutes in reminder_minutes:
+            due_date = datetime.fromisoformat(request.dueDate)
+            reminder_time = due_date - timedelta(minutes=minutes)
+            
+            reminder_id = f"{request.taskId}-{minutes}"
+            
+            reminder = ReminderModel(
+                id=reminder_id,
+                taskId=request.taskId,
+                taskTitle=request.taskTitle,
+                reminderTime=reminder_time.isoformat(),
+                notificationType=request.notificationType,
+                createdAt=datetime.now().isoformat()
+            )
+            
+            scheduled_reminders[reminder_id] = reminder.dict()
+            scheduled.append(reminder.dict())
+        
+        return {
+            "success": True,
+            "message": f"Smart reminders scheduled for {request.taskTitle} ({request.priority} priority)",
+            "reminders": scheduled,
+            "count": len(scheduled)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to schedule smart reminders: {str(e)}")
+
+
+@app.get("/api/reminders/task/{task_id}")
+def get_task_reminders(task_id: str):
+    """Get all reminders for a specific task"""
+    task_reminders = [
+        r for r in scheduled_reminders.values()
+        if r['taskId'] == task_id
+    ]
+    
+    # Sort by reminder time
+    task_reminders.sort(key=lambda x: x['reminderTime'])
+    
+    return {
+        "taskId": task_id,
+        "reminders": task_reminders,
+        "count": len(task_reminders)
+    }
+
+
+@app.get("/api/reminders")
+def get_all_reminders(status: Optional[str] = None):
+    """Get all reminders, optionally filtered by status"""
+    all_reminders = list(scheduled_reminders.values())
+    
+    if status:
+        if status == "pending":
+            all_reminders = [r for r in all_reminders if not r.get('sent')]
+        elif status == "sent":
+            all_reminders = [r for r in all_reminders if r.get('sent')]
+    
+    # Sort by reminder time
+    all_reminders.sort(key=lambda x: x['reminderTime'])
+    
+    return {
+        "reminders": all_reminders,
+        "total": len(all_reminders),
+        "pending": len([r for r in all_reminders if not r.get('sent')]),
+        "sent": len([r for r in all_reminders if r.get('sent')])
+    }
+
+
+@app.delete("/api/reminders/{reminder_id}")
+def delete_reminder(reminder_id: str):
+    """Delete a specific reminder"""
+    if reminder_id in scheduled_reminders:
+        del scheduled_reminders[reminder_id]
+        return {
+            "success": True,
+            "message": f"Reminder {reminder_id} deleted successfully"
+        }
+    else:
+        raise HTTPException(status_code=404, detail="Reminder not found")
+
+
+@app.delete("/api/reminders/task/{task_id}")
+def delete_task_reminders(task_id: str):
+    """Delete all reminders for a specific task"""
+    reminders_to_delete = [
+        r_id for r_id, r in scheduled_reminders.items()
+        if r['taskId'] == task_id
+    ]
+    
+    for r_id in reminders_to_delete:
+        del scheduled_reminders[r_id]
+    
+    return {
+        "success": True,
+        "message": f"Deleted {len(reminders_to_delete)} reminders for task {task_id}",
+        "deleted_count": len(reminders_to_delete)
+    }
+
+
+@app.post("/api/reminders/{reminder_id}/mark-sent")
+def mark_reminder_sent(reminder_id: str):
+    """Mark a reminder as sent"""
+    if reminder_id in scheduled_reminders:
+        scheduled_reminders[reminder_id]['sent'] = True
+        scheduled_reminders[reminder_id]['sentAt'] = datetime.now().isoformat()
+        return {
+            "success": True,
+            "message": f"Reminder {reminder_id} marked as sent",
+            "reminder": scheduled_reminders[reminder_id]
+        }
+    else:
+        raise HTTPException(status_code=404, detail="Reminder not found")
+
+
+@app.post("/api/reminders/send-email")
+def send_reminder_email(task_id: str, task_title: str, due_date: str, email: EmailStr):
+    """Send email reminder for a task"""
+    email_svc = get_email_service()
+    
+    if not email_svc:
+        raise HTTPException(status_code=400, detail="Email service not configured")
+    
+    try:
+        success = email_svc.send_task_reminder(
+            to_email=email,
+            task_title=task_title,
+            due_date=due_date,
+            priority="high"
+        )
+        
+        if success:
+            # Mark all reminders for this task as sent if email reminder
+            for r_id, r in scheduled_reminders.items():
+                if r['taskId'] == task_id and r['notificationType'] in ['email', 'all']:
+                    r['sent'] = True
+                    r['sentAt'] = datetime.now().isoformat()
+            
+            return {
+                "success": True,
+                "message": f"Reminder email sent to {email}",
+                "task": task_title
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send email")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
